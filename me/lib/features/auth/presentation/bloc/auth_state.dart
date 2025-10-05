@@ -7,62 +7,44 @@ abstract class AuthState extends Equatable {
   List<Object?> get props => [];
 }
 
-// Initial State
-class InitialState extends AuthState {
-  const InitialState();
-}
+class AuthInitialState extends AuthState {}
 
-// Loading State
-class LoadingState extends AuthState {
-  const LoadingState();
-}
+class LoadingState extends AuthState {}
 
-// Error State
-class ErrorState extends AuthState {
-  final String errorMessage;
+class EnterEmailState extends AuthState {}
 
-  const ErrorState({required this.errorMessage});
+class EnterPasswordState extends AuthState {
+  final String email;
+  const EnterPasswordState(this.email);
 
   @override
-  List<Object?> get props => [errorMessage];
+  List<Object?> get props => [email];
 }
 
-// Authenticated State
+class ConfirmPasswordState extends AuthState {
+  final String email;
+  final String password;
+  const ConfirmPasswordState(this.email, this.password);
+
+  @override
+  List<Object?> get props => [email, password];
+}
+
 class AuthenticatedState extends AuthState {
   final String userId;
-
-  const AuthenticatedState({required this.userId});
+  const AuthenticatedState(this.userId);
 
   @override
   List<Object?> get props => [userId];
 }
 
-// Unauthenticated State
-class UnAuthenticatedState extends AuthState {
-  const UnAuthenticatedState();
-}
+class UnauthenticatedState extends AuthState {}
 
-// Enter Mail State (When User is Logging In)
-class EnterMailState extends AuthState {
-  const EnterMailState();
-}
+class ErrorState extends AuthState {
+  final String message;
+  final AuthState prevState;
+  const ErrorState(this.message, this.prevState);
 
-// Enter Password State (When User is Entering Password)
-class EnterPasswordState extends AuthState {
-  const EnterPasswordState();
-}
-
-// Comfirm Password State
-class ConfirmPasswordState extends AuthState {
-  const ConfirmPasswordState();
-}
-
-// Change Username State
-class ChangeUsernameState extends AuthState {
-  const ChangeUsernameState();
-}
-
-// Change Password State
-class ChangePasswordState extends AuthState {
-  const ChangePasswordState();
+  @override
+  List<Object?> get props => [message];
 }

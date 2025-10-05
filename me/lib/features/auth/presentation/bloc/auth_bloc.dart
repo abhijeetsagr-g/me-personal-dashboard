@@ -9,34 +9,64 @@ part 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final _auth = AuthService.instance;
 
-  AuthBloc() : super(InitialState()) {
-    // Login Request
-    on<LoginRequest>(_onLoginRequest);
+  String? _email;
+  String? _password;
 
-    // Create Account Request
-  }
+  AuthBloc() : super(AuthInitialState()) {
+    // When Email Pressed
+    on<EmailSubmitted>((event, emit) {
+      _email = event.email;
+      emit(EnterPasswordState(_email!));
+    });
 
-  Future<void> _onLoginRequest(
-    LoginRequest event,
-    Emitter<AuthState> emit,
-  ) async {
-    try {
-      await _auth.signIn(email: event.email, password: event.email);
-      emit(AuthenticatedState(userId: _auth.user?.uid ?? "Unknown UID"));
-    } on FirebaseAuthException catch (e) {
-      emit(ErrorState(errorMessage: e.message ?? "Unknown Error"));
-    }
-  }
+    // When Password Pressed
+    on<PasswordSubmitted>((event, emit) {
+      _password = event.password;
+      if (event.isSignUp) {
+        emit(ConfirmPasswordState(_email!, event.password));
+      } else {
+        add(LoginRequested());
+      }
 
-  Future<void> _onCreateAccountRequest(
-    CreateAccountRequest event,
-    Emitter<AuthState> emit,
-  ) async {
-    try {
-      await _auth.signIn(email: event.email, password: event.email);
-      emit(AuthenticatedState(userId: _auth.user?.uid ?? "Unknown UID"));
-    } on FirebaseAuthException catch (e) {
-      emit(ErrorState(errorMessage: e.message ?? "Unknown Error"));
-    }
+      // When Confirm Password Pressed
+      on<ConfirmPasswordSubmitted>((event, emit) {
+        if (_password != event.password) {
+          emit(ErrorState("Password Don't Match", state));
+          return;
+        }
+        add(SignupRequested());
+      });
+
+      // Login Request
+      on<LoginRequested>((event, emit) async {
+        emit(LoadingState());
+        try {
+          await _auth.signIn(email: _email!, password: _password!);
+          emit(AuthenticatedState(_auth.user!.uid));
+        } on FirebaseAuthException catch (e) {
+          emit(
+            ErrorState(e.message ?? "Unknown Error", UnauthenticatedState()),
+          );
+        }
+      });
+
+      // on SignUp Request
+      on<SignupRequested>((event, emit) async {
+        emit(LoadingState());
+        try {
+          await _auth.createAccount(email: _email!, password: _password!);
+        } on FirebaseAuthException catch (e) {
+          emit(
+            ErrorState(e.message ?? "Unknown Error", UnauthenticatedState()),
+          );
+        }
+      });
+
+      // on Logout
+      on<LogoutRequested>((event, emit) async {
+        await _auth.signOut();
+        emit(UnauthenticatedState());
+      });
+    });
   }
 }
